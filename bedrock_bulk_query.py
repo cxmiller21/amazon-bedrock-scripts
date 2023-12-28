@@ -15,13 +15,14 @@ from bedrock_utils import get_foundation_model_ids, invoke_model, get_model_invo
 CSV_FILE_NAME = "bedrock-bulk-questions.csv"
 
 # Ask for confirmation before querying each model
-ASK_FOR_CONFIRMATION = False # True
+ASK_FOR_CONFIRMATION = False  # True
 
 client = boto3.client("bedrock")
 client_runtime = boto3.client("bedrock-runtime")
 
 
 def get_bedrock_fm_questions() -> list:
+    """Get Bedrock questions from a CSV file"""
     questions = list([])
     with open(CSV_FILE_NAME, newline="") as file:
         reader = csv.reader(file)
@@ -38,7 +39,20 @@ def get_bedrock_fm_questions() -> list:
     return questions
 
 
+def query_fm(prompt: str, model_id: str) -> str:
+    """Query a foundation model with a prompt"""
+    fm_invoke_body = get_model_invoke_body(model_id, prompt)
+    log.info(f"Querying Model ID: {model_id} - Invoke Body: {fm_invoke_body}")
+    response = invoke_model(client_runtime, model_id, fm_invoke_body)
+
+    if response is None:
+        return "No response from Amazon Bedrock"
+
+    return response
+
+
 def get_fm_query_results(date: str, model_id: str, fm_questions: list) -> dict:
+    """Query a foundation model with a list of questions"""
     model_results = dict(
         {
             "model_id": model_id,
@@ -56,27 +70,8 @@ def get_fm_query_results(date: str, model_id: str, fm_questions: list) -> dict:
     return model_results
 
 
-def query_fm(prompt: str, model_id: str) -> str:
-    """Query a foundation model with a prompt"""
-    fm_invoke_body = get_model_invoke_body(model_id, prompt)
-    log.info(f"Querying Model ID: {model_id} - Invoke Body: {fm_invoke_body}")
-    response = invoke_model(client_runtime, model_id, fm_invoke_body)
-
-    if response is None:
-        return "No response from Amazon Bedrock"
-
-    return response
-
-
-def convert_fm_results_to_csv(results: list) -> list:
-    """Converts a list of results to a csv file"""
-    csv_results = list([])
-    for result in results:
-        csv_results.append([result["question"], result["response"]])
-    return csv_results
-
-
 def generate_reports(artifact: dict, json_file: str):
+    """Generate JSON and CSV file reports and save them to the results folder"""
     if not Path(json_file).parent.exists():
         Path(json_file).parent.mkdir(parents=True)
 
@@ -111,10 +106,10 @@ def main():
     for model_id in model_ids:
         log.info(f"Model ID: {model_id}")
         if ASK_FOR_CONFIRMATION:
-          confirm = input("Continue? (y/n): ")
-          if confirm != "y":
-              log.info("Exiting...")
-              break
+            confirm = input("Continue? (y/n): ")
+            if confirm != "y":
+                log.info("Exiting...")
+                break
 
         query_results = get_fm_query_results(date, model_id, fm_questions)
         artifact["results"].append(query_results)

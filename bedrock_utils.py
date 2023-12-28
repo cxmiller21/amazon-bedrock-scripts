@@ -1,8 +1,5 @@
 import json
 
-from loguru import logger as log
-
-
 # Temporarily hardcoding model IDs but this is not being used
 # The get_foundation_model_ids gets this list dynamically
 # keeping this for verbosity and clarity
@@ -80,13 +77,12 @@ MODEL_INVOKE_BODY_MAP = {
 
 
 def get_model_id_key(model_id: str) -> str:
+    """Converts a full model ID to a key for the MODEL_INVOKE_BODY_MAP"""
     return model_id.split("-")[0]
 
 
 def get_foundation_model_ids(client) -> list:
-    """
-    Returns the IDs of all the text based foundation models
-    """
+    """Returns the IDs of all the text based foundation models"""
     response = client.list_foundation_models(
         byOutputModality="TEXT",
         byInferenceType="ON_DEMAND",
@@ -96,6 +92,7 @@ def get_foundation_model_ids(client) -> list:
 
 
 def get_model_invoke_body(model_id: str, message: str) -> json:
+    """Gets the invoke body for the specified model ID"""
     body_key = get_model_id_key(model_id)
     if body_key not in MODEL_INVOKE_BODY_MAP:
         raise ValueError(f"Model ID {model_id} not found in MODEL_INVOKE_BODY_MAP")
@@ -111,9 +108,7 @@ def get_model_invoke_body(model_id: str, message: str) -> json:
 
 
 def invoke_model(client_runtime, model_id: str, invoke_body: json) -> str:
-    """
-    Invokes the specified model with the given input text
-    """
+    """Invokes the specified model with the given input text"""
     accept = "application/json"
     content_type = "application/json"
     response = client_runtime.invoke_model(

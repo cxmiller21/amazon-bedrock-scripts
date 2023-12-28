@@ -4,7 +4,6 @@ Simple script to test the Amazon Bedrock Boto3 client
 Call with `python test.py`
 """
 import boto3
-import json
 import os
 
 from loguru import logger as log
